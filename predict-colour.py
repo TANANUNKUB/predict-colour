@@ -2,6 +2,8 @@ import onnxruntime
 import numpy as np
 import cv2
 from PIL import Image
+from colorthief import ColorThief
+from scipy.spatial import distance
 
 class PREDICT_COLOUR:
 
@@ -19,6 +21,24 @@ class PREDICT_COLOUR:
                         'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'blender', 'book', 'clock', 'vase',
                         'scissors', 'teddy bear', 'hair drier', 'toothbrush'
                         ]
+        self.color_names = {
+                        'white': (255, 255, 255),
+                        'black': (0, 0, 0),
+                        'red': (255, 0, 0),
+                        'green': (0, 255, 0),
+                        'blue': (0, 0, 255),
+                        'yellow': (255, 255, 0),
+                        'cyan': (0, 255, 255),
+                        'magenta': (255, 0, 255),
+                        'gray': (128, 128, 128),
+                        'purple': (128, 0, 128),
+                        'orange': (255, 165, 0),
+                        'brown': (139, 69, 19),
+                        'silver': (192, 192, 192),  # เพิ่มสีเงิน (silver)
+                        'gold': (255, 215, 0),  # เพิ่มสีทอง (gold)
+                        # เพิ่มสีอื่น ๆ ตามต้องการ
+                    }
+
         self.ort_session, self.input_names, self.output_names = self.load_model(onnx_file)
         self.image_height=0
         self.image_width=0
@@ -41,7 +61,7 @@ class PREDICT_COLOUR:
 
         return ort_session, input_names, output_names
 
-    def predict(self, input_tensor, conf_thresold=0.6):
+    def predict(self, input_tensor, conf_thresold=0.5):
 
         outputs = self.ort_session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
         predictions = np.squeeze(outputs).T
@@ -62,7 +82,7 @@ class PREDICT_COLOUR:
         boxes *= np.array([self.image_width, self.image_height, self.image_width, self.image_height])
         boxes = boxes.astype(np.int32)
 
-        indices = self.nms(boxes, scores, 0.3)
+        indices = self.nms(boxes, scores, 0.9)
 
         return boxes, indices, scores, class_ids
 
@@ -131,19 +151,22 @@ class PREDICT_COLOUR:
                       thickness=1)
           
       return image_draw
+    
+    def pred_colour(self, image):
+        rgb_value = cv2.mean(image)[:3]
+        distances = {
+    color_name: distance.euclidean(color_value, rgb_value)
+    for color_name, color_value in self.color_names.items()
+    }
 
-    def preprocess(self, image):
-        # แปลงภาพสีเป็นภาพขาว-ดำ
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        closest_color = min(distances, key=distances.get)
 
-        return gray
+        print("Closest Color:", closest_color)
 
     def __call__(self,image_path):
         image = cv2.imread(image_path)
         self.image_height, self.image_width = image.shape[:2]
         Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
-        
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(image_rgb, (self.input_width, self.input_height))
 
@@ -154,9 +177,14 @@ class PREDICT_COLOUR:
 
         boxes, indices, scores, class_ids = self.predict(input_tensor)
         image_preview = self.preview(image, boxes, indices, scores, class_ids)
+        for i in range(len(boxes)):
+            x1, y1, x2, y2 = self.xywh2xyxy(boxes[i])
+            crop_img = image[y1:y2, x1:x2]
+            self.pred_colour(crop_img)
+        
         cv2.imshow('eiei',image_preview)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 predict_colour = PREDICT_COLOUR(onnx_file="models/best.onnx")
-predict_colour('images/maxresdefault.jpg')
+predict_colour('images_test/38hGPc5jfk87a5enaGkd2T.jpg')

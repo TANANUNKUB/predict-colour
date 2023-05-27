@@ -1,3 +1,5 @@
 ultralytics
 onnx 
 onnxruntime
+colorthief
+webcolors
