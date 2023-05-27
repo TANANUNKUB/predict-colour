@@ -2,7 +2,6 @@ import onnxruntime
 import numpy as np
 import cv2
 from PIL import Image
-from colorthief import ColorThief
 from scipy.spatial import distance
 
 class PREDICT_COLOUR:
@@ -34,9 +33,8 @@ class PREDICT_COLOUR:
                         'purple': (128, 0, 128),
                         'orange': (255, 165, 0),
                         'brown': (139, 69, 19),
-                        'silver': (192, 192, 192),  # เพิ่มสีเงิน (silver)
-                        'gold': (255, 215, 0),  # เพิ่มสีทอง (gold)
-                        # เพิ่มสีอื่น ๆ ตามต้องการ
+                        'silver': (192, 192, 192), 
+                        'gold': (255, 215, 0),  
                     }
 
         self.ort_session, self.input_names, self.output_names = self.load_model(onnx_file)
@@ -61,7 +59,7 @@ class PREDICT_COLOUR:
 
         return ort_session, input_names, output_names
 
-    def predict(self, input_tensor, conf_thresold=0.5):
+    def predict(self, input_tensor, conf_thresold=0.4):
 
         outputs = self.ort_session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
         predictions = np.squeeze(outputs).T
@@ -82,7 +80,7 @@ class PREDICT_COLOUR:
         boxes *= np.array([self.image_width, self.image_height, self.image_width, self.image_height])
         boxes = boxes.astype(np.int32)
 
-        indices = self.nms(boxes, scores, 0.9)
+        indices = self.nms(boxes, scores, 0.5)
 
         return boxes, indices, scores, class_ids
 
@@ -108,6 +106,8 @@ class PREDICT_COLOUR:
         return keep_boxes
 
     def compute_iou(self, box, boxes):
+        box = self.xywh2xyxy(box)
+        boxes = self.xywh2xyxy(boxes)
         # Compute xmin, ymin, xmax, ymax for both boxes
         xmin = np.maximum(box[0], boxes[:, 0])
         ymin = np.maximum(box[1], boxes[:, 1])
@@ -137,31 +137,42 @@ class PREDICT_COLOUR:
         return y
 
     def preview(self, image, boxes, indices, scores, class_ids):
-      image_draw = image.copy()
-      for (bbox, score, label) in zip(self.xywh2xyxy(boxes[indices]), scores[indices], class_ids[indices]):
-          bbox = bbox.round().astype(np.int32).tolist()
-          cls_id = int(label)
-          cls = self.classes[cls_id]
-          color = (0,255,0)
-          cv2.rectangle(image_draw, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
-          cv2.putText(image_draw,
-                      f'{cls}:{int(score*100)}', (bbox[0], bbox[1] - 2),
-                      cv2.FONT_HERSHEY_SIMPLEX,
-                      0.60, [225, 255, 255],
-                      thickness=1)
-          
-      return image_draw
+        image_draw = image.copy()
+        for (bbox, score, label) in zip(self.xywh2xyxy(boxes[indices]), scores[indices], class_ids[indices]):
+            bbox = bbox.round().astype(np.int32).tolist()
+            cls_id = int(label)
+            cls = self.classes[cls_id]
+            color = (0,255,0)
+            #predict colour
+            x1, y1, x2, y2 = bbox
+            crop_img = image[y1:y2, x1:x2]
+            pred_colour = self.pred_colour(crop_img)
+
+            cv2.rectangle(image_draw, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
+            #predict text
+            cv2.putText(image_draw,
+                        f'{cls}:{int(score*100)}%', (bbox[0], bbox[1] - 2),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1, [225, 0, 0],
+                        thickness=2)
+            #colour text
+            cv2.putText(image_draw,
+                        pred_colour, (bbox[0], bbox[1]+30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1, [0, 0, 255],
+                        thickness=2)
+        
+        return image_draw
     
     def pred_colour(self, image):
         rgb_value = cv2.mean(image)[:3]
         distances = {
-    color_name: distance.euclidean(color_value, rgb_value)
-    for color_name, color_value in self.color_names.items()
-    }
-
+        color_name: distance.euclidean(color_value, rgb_value)
+        for color_name, color_value in self.color_names.items()
+                    }
         closest_color = min(distances, key=distances.get)
 
-        print("Closest Color:", closest_color)
+        return closest_color
 
     def __call__(self,image_path):
         image = cv2.imread(image_path)
@@ -176,15 +187,12 @@ class PREDICT_COLOUR:
         input_tensor = input_image[np.newaxis, :, :, :].astype(np.float32)
 
         boxes, indices, scores, class_ids = self.predict(input_tensor)
-        image_preview = self.preview(image, boxes, indices, scores, class_ids)
-        for i in range(len(boxes)):
-            x1, y1, x2, y2 = self.xywh2xyxy(boxes[i])
-            crop_img = image[y1:y2, x1:x2]
-            self.pred_colour(crop_img)
         
-        cv2.imshow('eiei',image_preview)
+        image_preview = self.preview(image, boxes, indices, scores, class_ids)
+        
+        cv2.imshow('image',image_preview)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 predict_colour = PREDICT_COLOUR(onnx_file="models/best.onnx")
-predict_colour('images_test/38hGPc5jfk87a5enaGkd2T.jpg')
+predict_colour('images/38hGPc5jfk87a5enaGkd2T.jpg')
