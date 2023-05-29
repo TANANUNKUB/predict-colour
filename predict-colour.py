@@ -8,18 +8,89 @@ class PREDICT_COLOUR:
 
     def __init__(self, onnx_file):
         
-        self.classes = [
-                        'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 
-                        'traffic light', 'fire hydrant', 'street sign', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 
-                        'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'hat', 'backpack', 'umbrella', 
-                        'shoe', 'eye glasses', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 
-                        'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'plate', 
-                        'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 
-                        'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'mirror', 
-                        'dining table', 'window', 'desk', 'toilet', 'door', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 
-                        'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'blender', 'book', 'clock', 'vase',
-                        'scissors', 'teddy bear', 'hair drier', 'toothbrush'
-                        ]
+        self.classes =  [
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush"
+]
+
         self.color_names = {
                         'white': (255, 255, 255),
                         'black': (0, 0, 0),
@@ -29,12 +100,12 @@ class PREDICT_COLOUR:
                         'yellow': (255, 255, 0),
                         'cyan': (0, 255, 255),
                         'magenta': (255, 0, 255),
-                        'gray': (128, 128, 128),
+                        #'gray': (128, 128, 128),
                         'purple': (128, 0, 128),
                         'orange': (255, 165, 0),
-                        'brown': (139, 69, 19),
-                        'silver': (192, 192, 192), 
-                        'gold': (255, 215, 0),  
+                        #'brown': (139, 69, 19),
+                        #'silver': (192, 192, 192), 
+                        #'gold': (255, 215, 0),  
                     }
 
         self.ort_session, self.input_names, self.output_names = self.load_model(onnx_file)
@@ -53,10 +124,8 @@ class PREDICT_COLOUR:
         ort_session = onnxruntime.InferenceSession(model_name)
         model_inputs = ort_session.get_inputs()
         model_output = ort_session.get_outputs()
-
         input_names = [model_inputs[i].name for i in range(len(model_inputs))]
         output_names = [model_output[i].name for i in range(len(model_output))]
-
         return ort_session, input_names, output_names
 
     def predict(self, input_tensor, conf_thresold=0.4):
@@ -113,15 +182,12 @@ class PREDICT_COLOUR:
         ymin = np.maximum(box[1], boxes[:, 1])
         xmax = np.minimum(box[2], boxes[:, 2])
         ymax = np.minimum(box[3], boxes[:, 3])
-
         # Compute intersection area
         intersection_area = np.maximum(0, xmax - xmin) * np.maximum(0, ymax - ymin)
-
         # Compute union area
         box_area = (box[2] - box[0]) * (box[3] - box[1])
         boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         union_area = box_area + boxes_area - intersection_area
-
         # Compute IoU
         iou = intersection_area / union_area
 
@@ -134,6 +200,7 @@ class PREDICT_COLOUR:
         y[..., 1] = x[..., 1] - x[..., 3] / 2
         y[..., 2] = x[..., 0] + x[..., 2] / 2
         y[..., 3] = x[..., 1] + x[..., 3] / 2
+
         return y
 
     def preview(self, image, boxes, indices, scores, class_ids):
@@ -147,7 +214,6 @@ class PREDICT_COLOUR:
             x1, y1, x2, y2 = bbox
             crop_img = image[y1:y2, x1:x2]
             pred_colour = self.pred_colour(crop_img)
-
             cv2.rectangle(image_draw, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
             #predict text
             cv2.putText(image_draw,
@@ -180,16 +246,11 @@ class PREDICT_COLOUR:
         Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(image_rgb, (self.input_width, self.input_height))
-
-        # Scale input pixel value to 0 to 1
         input_image = resized / 255.0
         input_image = input_image.transpose(2,0,1)
         input_tensor = input_image[np.newaxis, :, :, :].astype(np.float32)
-
         boxes, indices, scores, class_ids = self.predict(input_tensor)
-        
         image_preview = self.preview(image, boxes, indices, scores, class_ids)
-        
         cv2.imshow('image',image_preview)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
