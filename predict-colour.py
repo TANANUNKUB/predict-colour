@@ -91,23 +91,22 @@ class PREDICT_COLOUR:
     "toothbrush"
 ]
 
-        self.color_names = {
-                        'white': (255, 255, 255),
-                        'black': (0, 0, 0),
-                        'red': (255, 0, 0),
-                        'green': (0, 255, 0),
-                        'blue': (0, 0, 255),
-                        'yellow': (255, 255, 0),
-                        'cyan': (0, 255, 255),
-                        'magenta': (255, 0, 255),
-                        #'gray': (128, 128, 128),
-                        'purple': (128, 0, 128),
-                        'orange': (255, 165, 0),
-                        #'brown': (139, 69, 19),
-                        #'silver': (192, 192, 192), 
-                        #'gold': (255, 215, 0),  
-                    }
-
+        # self.color_names = {
+        #                 'white': (255, 255, 255),
+        #                 'black': (0, 0, 0),
+        #                 'red': (255, 0, 0),
+        #                 'green': (0, 255, 0),
+        #                 'blue': (0, 0, 255),
+        #                 'yellow': (255, 255, 0),
+        #                 'cyan': (0, 255, 255),
+        #                 'magenta': (255, 0, 255),
+        #                 'gray': (128, 128, 128),
+        #                 'purple': (128, 0, 128),
+        #                 'orange': (255, 165, 0),
+        #                 'brown': (139, 69, 19),
+        #                 'silver': (192, 192, 192), 
+        #                 'gold': (255, 215, 0),  
+        #             }
         self.ort_session, self.input_names, self.output_names = self.load_model(onnx_file)
         self.image_height=0
         self.image_width=0
@@ -229,17 +228,59 @@ class PREDICT_COLOUR:
                         thickness=2)
         
         return image_draw
-    
-    def pred_colour(self, image):
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        rgb_value = cv2.mean(image_rgb)[:3]
-        distances = {
-        color_name: distance.euclidean(color_value, rgb_value)
-        for color_name, color_value in self.color_names.items()
-                    }
-        closest_color = min(distances, key=distances.get)
+    def rgb_to_hsv(self, rgb_value):
+        r, g, b = rgb_value
+        r /= 255.0
+        g /= 255.0
+        b /= 255.0
+        max_value = max(r, g, b)
+        min_value = min(r, g, b)
+        delta = max_value - min_value
+        # Calculate Hue
+        if delta == 0:
+            h = 0  # undefined, but we can set it to 0
+        elif max_value == r:
+            h = ((g - b) / delta) % 6
+        elif max_value == g:
+            h = ((b - r) / delta) + 2
+        else:
+            h = ((r - g) / delta) + 4
+        h *= 60  # Convert to degrees
+        if h < 0:
+            h += 360
+        # Calculate Saturation
+        if max_value == 0:
+            s = 0
+        else:
+            s = delta / max_value
+        # Calculate Value
+        v = max_value
+        return h, s, v
 
-        return closest_color
+    def pred_colour(self, image):
+
+        white = black = red = pink = purple = blue = sky_blue = green = yellow = orange = 0
+        all_colour = ["white", "black", "red", "pink", "purple", "blue", "sky_blue", "green", "yellow", "orange"]
+
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        l1, l2, _ = image_rgb.shape
+        for i in range(l1):
+            for j in range(l2):
+                rgb_value = image_rgb[i][j]
+                h, s, v = self.rgb_to_hsv(rgb_value)         
+                if s < 0.03 and v > 0.95 :white+=1
+                elif v < 0.15:black+=1
+                elif h > 345 :red+=1
+                elif h > 300 :pink+=1
+                elif h > 255 :purple+=1
+                elif h > 220 :blue+=1
+                elif h > 160 :sky_blue+=1
+                elif h > 80 :green+=1
+                elif h > 40 :yellow+=1
+                elif h > 15 :orange+=1
+                elif h < 15 :red+=1
+
+        return all_colour[np.argmax([white, black, red, pink, purple, blue, sky_blue, green, yellow, orange])]
 
     def __call__(self,image_path):
         image = cv2.imread(image_path)
@@ -257,4 +298,4 @@ class PREDICT_COLOUR:
         cv2.destroyAllWindows()
 
 predict_colour = PREDICT_COLOUR(onnx_file="models/best.onnx")
-predict_colour('images/38hGPc5jfk87a5enaGkd2T.jpg')
+predict_colour('images/vibrant-rooms-8-1548883440.jpg')
