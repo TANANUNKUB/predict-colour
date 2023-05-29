@@ -231,7 +231,8 @@ class PREDICT_COLOUR:
         return image_draw
     
     def pred_colour(self, image):
-        rgb_value = cv2.mean(image)[:3]
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        rgb_value = cv2.mean(image_rgb)[:3]
         distances = {
         color_name: distance.euclidean(color_value, rgb_value)
         for color_name, color_value in self.color_names.items()
