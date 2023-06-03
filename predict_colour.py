@@ -1,7 +1,6 @@
 import onnxruntime
 import numpy as np
 import cv2
-from PIL import Image
 
 class PREDICT_COLOUR:
 
@@ -193,7 +192,13 @@ class PREDICT_COLOUR:
             color = (0,255,0)
             #predict colour
             x1, y1, x2, y2 = bbox
+            if x1 < 0 :x1 = 0
+            if y1 < 0 :y1 = 0
+            if x2 < 0 :x2 = 0
+            if y2 < 0 :y2 = 0
+
             crop_img = image[y1:y2, x1:x2]
+            
             pred_colour = self.pred_colour(crop_img)
             cv2.rectangle(image_draw, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
             #predict text
@@ -240,7 +245,6 @@ class PREDICT_COLOUR:
         return h, s, v
 
     def pred_colour(self, image):
-        
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         rgb_value = cv2.mean(image_rgb)[:3]
         h, s, v = self.rgb_to_hsv(rgb_value)         
@@ -260,7 +264,6 @@ class PREDICT_COLOUR:
     def __call__(self,image_path, output_path):
         image = cv2.imread(image_path)
         self.image_height, self.image_width = image.shape[:2]
-        Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(image_rgb, (self.input_width, self.input_height))
         input_image = resized / 255.0
@@ -270,5 +273,3 @@ class PREDICT_COLOUR:
         image_preview = self.preview(image, boxes, indices, scores, class_ids)
         cv2.imwrite(output_path, image_preview)
         return output_path
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
