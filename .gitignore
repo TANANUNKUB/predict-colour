@@ -1,3 +1,6 @@
 images_test/
 venv/
 image.jpg
+__pycache__/
+public/*
+!public/.gitkeep
