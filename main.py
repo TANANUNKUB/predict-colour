@@ -2,10 +2,8 @@ from flask import Flask, send_from_directory
 from predict_colour import PREDICT_COLOUR
 import os
 
-app = Flask(__name__)
-
 predict_colour = PREDICT_COLOUR(onnx_file="models/best.onnx")
-predict_colour('images/vibrant-rooms-8-1548883440.jpg', 'public/output.jpg')
+app = Flask(__name__)
 
 @app.route('/public/<path:path>')
 def send_report(path):
@@ -13,7 +11,11 @@ def send_report(path):
 
 @app.route('/')
 def index():
-    return '<center><img style="width:60vw" src="public/output.jpg" /></center>'
+    result = []
+    for i,j in enumerate(os.listdir('images')):
+       img = predict_colour(f'images/{j}', f'public/output{i+1}.jpg')
+       result.append(f"<center><img style='width:60vw' src={img} /></center>")
+    return "".join(result)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',port=1200)
