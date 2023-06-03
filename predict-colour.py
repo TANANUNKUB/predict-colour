@@ -2,7 +2,6 @@ import onnxruntime
 import numpy as np
 import cv2
 from PIL import Image
-from scipy.spatial import distance
 
 class PREDICT_COLOUR:
 
@@ -270,9 +269,9 @@ class PREDICT_COLOUR:
         input_tensor = input_image[np.newaxis, :, :, :].astype(np.float32)
         boxes, indices, scores, class_ids = self.predict(input_tensor)
         image_preview = self.preview(image, boxes, indices, scores, class_ids)
-        cv2.imshow('image',image_preview)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.imwrite('image.jpg',image_preview)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
 
 predict_colour = PREDICT_COLOUR(onnx_file="models/best.onnx")
 predict_colour('images/vibrant-rooms-8-1548883440.jpg')
