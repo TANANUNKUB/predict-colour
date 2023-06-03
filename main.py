@@ -1,5 +1,6 @@
 from flask import Flask, send_from_directory
 from predict_colour import PREDICT_COLOUR
+import os
 
 app = Flask(__name__)
 
@@ -15,4 +16,4 @@ def index():
     return '<center><img style="width:60vw" src="public/output.jpg" /></center>'
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
