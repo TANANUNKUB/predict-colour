@@ -183,7 +183,7 @@ class PREDICT_COLOUR:
 
         return y
 
-    def preview(self, image, boxes, indices, scores, class_ids):
+    def preview(self, image, boxes, indices, scores, class_ids, everything_is_red_panda):
         image_draw = image.copy()
         for (bbox, score, label) in zip(self.xywh2xyxy(boxes[indices]), scores[indices], class_ids[indices]):
             bbox = bbox.round().astype(np.int32).tolist()
@@ -202,6 +202,8 @@ class PREDICT_COLOUR:
             pred_colour = self.pred_colour(crop_img)
             cv2.rectangle(image_draw, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
             #predict text
+            if everything_is_red_panda:
+                cls = 'Red Panda'
             cv2.putText(image_draw,
                         f'{cls}:{int(score*100)}%', (bbox[0], bbox[1] - 2),
                         cv2.FONT_HERSHEY_SIMPLEX,
@@ -261,7 +263,7 @@ class PREDICT_COLOUR:
         elif h < 15 :colour = 'red' 
         return colour
 
-    def __call__(self,image_path, output_path):
+    def __call__(self,image_path, output_path, everything_is_red_panda):
         image = cv2.imread(image_path)
         self.image_height, self.image_width = image.shape[:2]
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -270,6 +272,6 @@ class PREDICT_COLOUR:
         input_image = input_image.transpose(2,0,1)
         input_tensor = input_image[np.newaxis, :, :, :].astype(np.float32)
         boxes, indices, scores, class_ids = self.predict(input_tensor)
-        image_preview = self.preview(image, boxes, indices, scores, class_ids)
+        image_preview = self.preview(image, boxes, indices, scores, class_ids, everything_is_red_panda)
         cv2.imwrite(output_path, image_preview)
         return output_path
