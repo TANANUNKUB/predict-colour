@@ -12,15 +12,19 @@ def send_report(path):
 def main():
 	return render_template("index.html")
 
-@app.route('/success', methods = ['POST'])
-def success():
+@app.route('/success', methods = ['POST', 'GET'])
+def successPOST():
 	if request.method == 'POST':
 		f = request.files['file']
 		f.save("public/image.jpg")
 		_ = pred('public/image.jpg', 'public/image1.jpg')
 		return render_template("success.html")
+	else:
+		return redirect("/",code=302)
+
+	
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0',port=80)
+	app.run(debug=True, host='0.0.0.0',port=80)
 
 
