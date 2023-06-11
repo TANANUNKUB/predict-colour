@@ -1,6 +1,6 @@
 from flask import *
 from predict_colour import PREDICT_COLOUR
-
+from datetime import datetime
 app = Flask(__name__, template_folder='template')
 pred = PREDICT_COLOUR(onnx_file="models/best.onnx")
 
@@ -16,9 +16,12 @@ def main():
 def successPOST():
 	if request.method == 'POST':
 		f = request.files['file']
-		f.save("public/image.jpg")
-		_ = pred('public/image.jpg', 'public/image1.jpg')
-		return render_template("success.html")
+		date = str(datetime.now()).replace(" ","")
+		filename = f"public/{date}.jpg"
+		output = f"public/{date}_output.jpg"
+		f.save(filename)
+		_ = pred(filename, output)
+		return render_template("success.html", image=output)
 	else:
 		return redirect("/",code=302)
 
