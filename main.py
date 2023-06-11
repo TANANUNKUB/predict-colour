@@ -1,5 +1,3 @@
-from distutils.log import debug
-from fileinput import filename
 from flask import *
 from predict_colour import PREDICT_COLOUR
 
@@ -19,10 +17,10 @@ def success():
 	if request.method == 'POST':
 		f = request.files['file']
 		f.save("public/image.jpg")
-		img = pred('public/image.jpg', 'public/image1.jpg')
+		_ = pred('public/image.jpg', 'public/image1.jpg')
 		return render_template("success.html")
 
 if __name__ == '__main__':
-	app.run(debug=True,host='0.0.0.0',port=1200)
+	app.run(host='0.0.0.0',port=80)
 
 
